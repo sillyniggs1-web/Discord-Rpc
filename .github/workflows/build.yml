@@ -1,0 +1,31 @@
+name: Build HexedDiscordRPC
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # AML headers (VERIFY: repo name and that it contains mod/amlmod.h)
+      - name: Fetch AML headers
+        run: |
+          git clone --depth 1 https://github.com/RusJJ/AndroidModLoader aml-src
+          H=$(find aml-src -name amlmod.h | head -1)
+          echo "Found: $H"
+          mkdir -p jni/aml/include/mod
+          cp -r "$(dirname "$H")"/* jni/aml/include/mod/
+
+      - name: Build with ndk-build
+        run: |
+          NDK="${ANDROID_NDK_LATEST_HOME:-$ANDROID_NDK_HOME}"
+          "$NDK/ndk-build" NDK_PROJECT_PATH=. APP_BUILD_SCRIPT=jni/Android.mk NDK_APPLICATION_MK=jni/Application.mk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: HexedDiscordRPC
+          path: libs/
