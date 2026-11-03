@@ -24,12 +24,13 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - uses: android-actions/setup-android@v3
-
       - name: Install SDK platform, build-tools, NDK 27 and CMake
         run: |
-          yes | sdkmanager --licenses > /dev/null || true
-          sdkmanager "platforms;android-34" "build-tools;34.0.0" "ndk;27.0.12077973" "cmake;3.22.1"
+          # the runner already ships the Android SDK; just add what we need
+          SDKM=$(command -v sdkmanager || ls "$ANDROID_HOME"/cmdline-tools/*/bin/sdkmanager | head -n 1)
+          echo "Using $SDKM"
+          yes | "$SDKM" --licenses > /dev/null || true
+          "$SDKM" "platforms;android-34" "build-tools;34.0.0" "ndk;27.0.12077973" "cmake;3.22.1"
 
       - uses: gradle/actions/setup-gradle@v4
         with:
