@@ -1,0 +1,51 @@
+name: Build APK
+
+on:
+  workflow_dispatch:        # lets you press "Run workflow" manually
+  push:
+    paths:
+      - 'SampDiscordRpc-v1-beta.zip'
+      - '.github/workflows/build-apk.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Unpack project (Discord SDK AAR is already inside the zip)
+        run: |
+          unzip -q SampDiscordRpc-v1-beta.zip
+          ls -la SampDiscordRpc SampDiscordRpc/app/libs
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Install SDK platform, build-tools, NDK 27 and CMake
+        run: |
+          yes | sdkmanager --licenses > /dev/null || true
+          sdkmanager "platforms;android-34" "build-tools;34.0.0" "ndk;27.0.12077973" "cmake;3.22.1"
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Build debug APK (signed automatically with the debug key)
+        working-directory: SampDiscordRpc
+        run: gradle assembleDebug --stacktrace
+
+      - name: Rename APK
+        run: |
+          mkdir -p out
+          cp SampDiscordRpc/app/build/outputs/apk/debug/app-debug.apk out/SampDiscordRpc-v1-beta.apk
+          ls -la out
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SampDiscordRpc-v1-beta-apk
+          path: out/SampDiscordRpc-v1-beta.apk
